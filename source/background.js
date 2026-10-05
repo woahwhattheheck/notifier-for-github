@@ -14,14 +14,14 @@ async function scheduleNextAlarm(interval) {
 	const intervalValue = interval || 60;
 
 	if (intervalSetting !== intervalValue) {
-		localStore.set('interval', intervalValue);
+		await localStore.set('interval', intervalValue);
 	}
 
 	// Delay less than 1 minute will cause a warning
 	const delayInMinutes = Math.max(Math.ceil(intervalValue / 60), 1);
 
-	browser.alarms.clearAll();
-	browser.alarms.create('update', {delayInMinutes});
+	await browser.alarms.clearAll();
+	await browser.alarms.create('update', {delayInMinutes});
 }
 
 async function handleLastModified(newLastModified) {
@@ -43,17 +43,17 @@ async function updateNotificationCount() {
 	const {count, interval, lastModified} = response;
 
 	renderCount(count);
-	scheduleNextAlarm(interval);
-	handleLastModified(lastModified);
+	await scheduleNextAlarm(interval);
+	await handleLastModified(lastModified);
 }
 
-function handleError(error) {
-	scheduleNextAlarm();
+async function handleError(error) {
+	await scheduleNextAlarm();
 	renderError(error);
 }
 
-function handleOfflineStatus() {
-	scheduleNextAlarm();
+async function handleOfflineStatus() {
+	await scheduleNextAlarm();
 	renderWarning('offline');
 }
 
@@ -62,10 +62,10 @@ async function update() {
 		try {
 			await updateNotificationCount();
 		} catch (error) {
-			handleError(error);
+			await handleError(error);
 		}
 	} else {
-		handleOfflineStatus();
+		await handleOfflineStatus();
 	}
 }
 
@@ -131,7 +131,7 @@ async function addHandlers() {
 
 async function init() {
 	browser.alarms.onAlarm.addListener(update);
-	scheduleNextAlarm();
+	await scheduleNextAlarm();
 
 	browser.runtime.onMessage.addListener(onMessage);
 	browser.runtime.onInstalled.addListener(handleInstalled);
@@ -144,8 +144,8 @@ async function init() {
 	browser.action.onClicked.addListener(handleBrowserActionClick);
 
 	await createOffscreenDocument();
-	addHandlers();
-	update();
+	await addHandlers();
+	await update();
 }
 
 init();
