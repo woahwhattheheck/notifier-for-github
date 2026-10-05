@@ -21,7 +21,7 @@ async function scheduleNextAlarm(interval) {
 	const delayInMinutes = Math.max(Math.ceil(intervalValue / 60), 1);
 
 	await browser.alarms.clearAll();
-	await browser.alarms.create('update', {delayInMinutes});
+	browser.alarms.create('update', {delayInMinutes});
 }
 
 async function handleLastModified(newLastModified) {
@@ -43,18 +43,20 @@ async function updateNotificationCount() {
 	const {count, interval, lastModified} = response;
 
 	renderCount(count);
-	await scheduleNextAlarm(interval);
-	await handleLastModified(lastModified);
+	await Promise.all([
+		scheduleNextAlarm(interval),
+		handleLastModified(lastModified)
+	]);
 }
 
 async function handleError(error) {
-	await scheduleNextAlarm();
 	renderError(error);
+	await scheduleNextAlarm();
 }
 
 async function handleOfflineStatus() {
-	await scheduleNextAlarm();
 	renderWarning('offline');
+	await scheduleNextAlarm();
 }
 
 async function update() {
@@ -131,7 +133,7 @@ async function addHandlers() {
 
 async function init() {
 	browser.alarms.onAlarm.addListener(update);
-	await scheduleNextAlarm();
+	scheduleNextAlarm();
 
 	browser.runtime.onMessage.addListener(onMessage);
 	browser.runtime.onInstalled.addListener(handleInstalled);
@@ -144,8 +146,8 @@ async function init() {
 	browser.action.onClicked.addListener(handleBrowserActionClick);
 
 	await createOffscreenDocument();
-	await addHandlers();
-	await update();
+	addHandlers();
+	update();
 }
 
 init();
